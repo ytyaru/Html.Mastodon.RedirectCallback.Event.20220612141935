@@ -93,3 +93,32 @@ misskey-${domain}-user
 
 　どうでもいいが、アクセストークンの権限範囲をしめす語に統一性がない。`scope`,`grant`,`permission`の３種がある。統一してほしい。
 
+## event名にハイフンを入れると実行できない。アンダーバーならOK
+
+* https://discuss.newrelic.com/t/custom-event-metric-naming-syntax-hyphens/102400/2
+
+　今回、次のような独自イベントを発行した。
+
+イベント名|概要
+----------|----
+`mastodon_redirect_approved`|マストドンの承認リダイレクトで承認されたときに発火する
+`mastodon_redirect_rejected`|マストドンの承認リダイレクトで拒否されたときに発火する
+
+　このとき、イベント名の区切り文字にハイフンを使うと受信されなかった。アンダーバーだと受信された。そういう仕様らしい。
+
+発火
+```javascript
+document.dispatchEvent(new CustomEvent('mastodon_redirect_approved', {detail: params}));
+document.dispatchEvent(new CustomEvent('mastodon_redirect_rejected', {detail: params}));
+```
+
+受信
+```javascript
+document.addEventListener('mastodon_redirect_approved', async(event) => {
+    // 承認されたときに実行する内容
+});
+document.addEventListener('mastodon_redirect_rejected', async(event) => {
+    // 拒否されたときに実行する内容
+});
+```
+
