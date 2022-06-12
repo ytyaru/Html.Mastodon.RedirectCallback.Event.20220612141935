@@ -29,25 +29,7 @@ class TootButton extends HTMLElement {
         shadow.innerHTML = await gen.generate()
         this.shadowRoot.querySelector('img').addEventListener('animationend', (e)=>{ e.target.classList.remove('jump'); e.target.classList.remove('flip'); }, false);
         this.#addListenerEvent()
-        //this.#redirectCallback()
     }
-    /*
-    async #redirectCallback() { // 認証したあとに戻ってきたらトゥートする
-        console.debug(this.domain)
-        const url = new URL(location.href)
-        if ((url.searchParams.has('code') && url.searchParams.has('domain')) || (url.searchParams.has('error') && url.searchParams.get('domain'))) {
-            const domain = url.searchParams.get('domain')
-            const authorizer = new MastodonAuthorizer(domain, 'write:statuses')
-            const accessToken = await authorizer.redirectCallback()
-            console.debug('----- 認証リダイレクト後 -----')
-            if (accessToken) {
-                const client = new MastodonApiClient(domain, accessToken)
-                const res = await client.toot(sessionStorage.getItem(`status`))
-                this.#tootEvent(res)
-            }
-        }
-    }
-    */
     #tootEvent(json) { 
         const params = {
             domain: this.domain,
@@ -58,15 +40,6 @@ class TootButton extends HTMLElement {
             new WebmentionRequester().request(json.url)
         }
         this.dispatchEvent(new CustomEvent('toot', {detail: params}));
-        this.#clearSettion()
-    }
-    #clearSettion() {
-        console.log('----- clearSettion -----', this.domain)
-        sessionStorage.removeItem(`${this.domain}-app`);
-        sessionStorage.removeItem(`${this.domain}-client_id`);
-        sessionStorage.removeItem(`${this.domain}-client_secret`);
-        sessionStorage.removeItem(`${this.domain}-access_token`);
-        sessionStorage.removeItem(`status`);
     }
     #addListenerEvent() { // トゥートボタンを押したときの動作を実装する
         //this.addEventListener('pointerdown', async(event) => {
@@ -79,23 +52,6 @@ class TootButton extends HTMLElement {
         if (this.status) { return this.status }
         // toot-dialogのtoot-status要素から取得しようと思ったが、shadow要素のためか取得できなかった。
     }
-    #getDomain() {
-        const domain = window.prompt('インスタンスのURLかドメイン名を入力してください。');
-        try { return new URL(domain).hostname }
-        catch (e) { return domain }
-    }
-    async #isExistInstance(domain) {
-        // 入力したドメインが存在するか（リンク切れでないか）
-        // 入力したドメインはマストドンのインスタンスか（どうやってそれを判定するか）
-        const client = new MastodonApiClient(domain)
-        const json = await client.instance().catch(e=>null)
-        if (!json) { return false }
-        if (!json.hasOwnProperty('version')) { return false; }
-        console.debug(json.version)
-        //if (!json || !json.hasOwnProperty('version')) { throw new Error(`指定したURLやドメイン ${domain} はmastodonのインスタンスでない可能性があります。api/v1/instanceリクエストをしても想定した応答が返ってこなかったためです。\n入力したURLやドメイン名がmastodonのインスタンスであるか確認してください。あるいはmastodonの仕様変更が起きたのかもしれません。対応したソースコードを書き換えるしかないでしょう。`) }
-        console.debug(`----- ${domain} は正常なmastodonサーバです -----`)
-        return true
-    }
     async #toot(target) {
         console.debug('トゥートボタンを押しました。')
         const status = this.#getStatus()
@@ -106,29 +62,12 @@ class TootButton extends HTMLElement {
         }
         //event.target.classList.add('jump');
         target.classList.add('jump');
-        const domain = (this.domain) ? this.domain : this.#getDomain()
-        const isExist = await this.#isExistInstance(domain)
-        if (!isExist) { Toaster.toast(`指定したURLやドメイン ${domain} はmastodonのインスタンスでない可能性があります。\napi/v1/instanceリクエストをしても想定した応答が返ってこなかったためです。\n入力したURLやドメイン名がmastodonのインスタンスであるか確認してください。あるいはmastodonの仕様変更が起きたのかもしれません。対応したソースコードを書き換えるしかないでしょう。`, true); return; }
+        const [domain, json] = (this.domain) ? [this.domain, MastodonInstance.request(this.domain)] : await MastodonInstance.get()
+        if (!domain || !json) { Toaster.toast(`指定したURLやドメイン ${domain} はmastodonのインスタンスでない可能性があります。\napi/v1/instanceリクエストをしても想定した応答が返ってこなかったためです。\n入力したURLやドメイン名がmastodonのインスタンスであるか確認してください。あるいはmastodonの仕様変更が起きたのかもしれません。対応したソースコードを書き換えるしかないでしょう。`, true); return; }
         this.domain = domain
         console.debug(domain)
-        const access_token = sessionStorage.getItem(`${domain}-access_token`)
-        if (access_token) {
-            console.debug('既存のトークンが有効なため即座にトゥートします。');
-            if (!this._client) {
-                this._client = new MastodonApiClient(this.domain, access_token)
-            }
-            const res = await this._client.toot(this.#getStatus()).catch(e=>this._client.error(e))
-            this.#tootEvent(res)
-        } else {
-            console.debug('既存のトークンがないか無効のため、新しいアクセストークンを発行します。');
-            if (!this._authorizer) { // インスタンス＝ユーザ入力時
-                this._authorizer = new MastodonAuthorizer(domain, 'write:statuses')
-            }
-            console.debug(this._authorizer)
-            this._authorizer.authorize(['toot'], [{status:this.#getStatus()}])
-            //this._authorizer.authorize('toot', `{"status":"${this.#getStatus()"}`)
-            //this._authorizer.authorize(this.#getStatus())
-        }
+        const authorizer = new MastodonAuthorizer(domain, 'write:statuses')
+        authorizer.authorize(['status'], [{status:status}])
     }
 }
 window.addEventListener('DOMContentLoaded', (event) => {

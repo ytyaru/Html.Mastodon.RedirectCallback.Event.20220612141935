@@ -24,4 +24,9 @@ class MastodonApiClient extends MastodonRestClient {
         const params = {status: status};
         return await this.post('api/v1/statuses', this.#AuthHeader, params)
     }
+    async status(params) { // 認証必須
+        console.debug('----- api/v1/statuses -----')
+        console.debug('params:', params)
+        return await this.post('api/v1/statuses', this.#AuthHeader, params)
+    }
 }

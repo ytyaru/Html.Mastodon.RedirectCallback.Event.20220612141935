@@ -33,6 +33,11 @@ window.addEventListener('DOMContentLoaded', async(event) => {
                 const gen = new MastodonProfileGenerator(event.detail.domain)
                 document.getElementById('export-mastodon').innerHTML = gen.generate(event.detail.results[i])
             }
+            else if ('status' == event.detail.actions[i]) {
+                const html = new Comment().mastodonResToComment(event.detail.results[i])
+                const comment = document.querySelector(`mention-section`).shadowRoot.querySelector(`#web-mention-comment`)
+                comment.innerHTML = html + comment.innerHTML
+            }
         }
     });
     document.addEventListener('mastodon_redirect_rejected', async(event) => {
