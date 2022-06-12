@@ -7,11 +7,11 @@ class MastodonApiClient extends MastodonRestClient {
     get #AuthHeader() { return {'Authorization': `Bearer ${this.accessToken}`} }
     #headers(headers=null) { return (headers) ? {...this.#AuthHeader, ...headers} : this.#AuthHeader }
     async instance() { // 認証なしで使える
-        console.debug('----- verify_credentials -----')
+        console.debug('----- api/v1/instance -----')
         return await this.get('api/v1/instance', null, null)
     }
     async verify() { // 認証必須
-        console.debug('----- verify_credentials -----')
+        console.debug('----- api/v1/apps/verify_credentials -----')
         return await this.get('api/v1/apps/verify_credentials', this.#AuthHeader, null)
     }
     async accounts() { // 認証必須
@@ -19,7 +19,7 @@ class MastodonApiClient extends MastodonRestClient {
         return await this.get('api/v1/accounts/verify_credentials', this.#AuthHeader, null)
     }
     async toot(status) { // 認証必須
-        console.debug('----- toot -----')
+        console.debug('----- toot api/v1/statuses -----')
         console.debug('status:', status)
         const params = {status: status};
         return await this.post('api/v1/statuses', this.#AuthHeader, params)

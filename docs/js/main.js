@@ -7,8 +7,13 @@ window.addEventListener('DOMContentLoaded', async(event) => {
     } catch(e) { console.debug(e) }
     document.getElementById('get-mastodon-account-info').addEventListener('click', async(event) => {
         const domain = document.getElementById('mastodon-instance').value
-        const authorizer = new MastodonAuthorizer(domain, 'read:accounts')
-        authorizer.authorize(['accounts'], null)
+        if (await MastodonInstance.isExist(domain)) {
+            console.debug('指定したインスタンスは存在する')
+            const authorizer = new MastodonAuthorizer(domain, 'read:accounts')
+            authorizer.authorize(['accounts'], null)
+        } else {
+            Toaster.toast('指定したインスタンスは存在しません。', true)
+        }
     });
     document.addEventListener('mastodon_redirect_approved', async(event) => {
         console.debug('===== mastodon-redirect-approved =====')
